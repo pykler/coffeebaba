@@ -25,15 +25,17 @@
 //   * 
 //   * 
 
+#define DEBUG       1  // Enable / Disable debug
+
 #define NAME        "CoffeeBaba"
 #define TEMP_MAX    269       // Max temperature for system
 #define SERIAL_BAUD 74880   // boot baud for my NodeMCU
 #define LED_PIN     LED_BUILTIN
 #define LED_LOWON   1   // ESP-01 the led is on when low voltage
 #define SSR_PIN     5   // D1
-#define TCP_SCK     14  // D5
-#define TCPL_CS     12  // D6
-#define TCP_SO      13  // D7
+#define TCP_SCK     14  // D5 Serial Clock Input
+#define TCP_SO      12  // D6 Serial Data Output
+#define TCP_CS      15  // D8 Chip Select (low to enable serial interface)
 
 #include "led_controller.h"
 #include <max6675.h>
@@ -41,6 +43,7 @@
 
 WiFiManager wm;
 LedController led(LED_PIN);
+MAX6675 thermocouple(TCP_SCK, TCP_CS, TCP_SO);
 
 void wifi_setup()
 {
@@ -68,19 +71,42 @@ void wifi_setup()
 
 void wifi_completedCallback()
 {
+    Serial.println('WiFi: completed callback');
     led.fix(HIGH & ~LED_LOWON);
 }
 
+#if DEBUG
+unsigned long thermocouple_last = 0;
+void thermocouple_loop()
+{
+    unsigned long now = millis();
+    if (now - thermocouple_last < 5000)
+    {
+        // must wait atleast 250ms between reads
+        delay(1000);
+        return;
+    }
+    thermocouple_last = now;
+    Serial.print("C = ");
+    Serial.println(thermocouple.readCelsius());
+    // Serial.print("F = ");
+    // Serial.println(thermocouple.readFahrenheit());
+}
+#endif
+
 void setup() 
 {
-  Serial.begin(SERIAL_BAUD);  
-  Serial.println('CoffeeBaba Starting ...');
-  led.setup();
-  wifi_setup();
+    Serial.begin(SERIAL_BAUD);  
+    Serial.println('CoffeeBaba Starting ...');
+    led.setup();
+    wifi_setup();
 }
 
 void loop() 
 {
-  led.loop();
-  wm.process();
+    led.loop();
+    wm.process();
+#if DEBUG
+    thermocouple_loop();
+#endif
 }
