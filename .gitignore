@@ -5,3 +5,5 @@ bin/*/
 *~
 build-tmp/
 debug.txt
+*.swp
+tmp/
