@@ -3,8 +3,6 @@
 #ifndef led_controller_h
 #define led_controller_h
 
-#include "Arduino.h"
-
 class LedController
 {
     public:
