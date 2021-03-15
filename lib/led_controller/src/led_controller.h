@@ -6,7 +6,7 @@
 class LedController
 {
     public:
-        LedController(int);
+        explicit LedController(int);
         void setup();
         void loop();
         void blink(unsigned long);

@@ -108,10 +108,14 @@ void wifi_completedCallback()
     reboot();
 }
 
+#if DEBUG
+// currently this is only used when DEBUG is on
+// if we use this elsewhere remove the condition
 float thermocouple_c_to_f(float deg_c)
 {
     return deg_c * 9.0 / 5.0 + 32;
 }
+#endif
 
 void thermocouple_loop()
 {
