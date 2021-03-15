@@ -128,7 +128,7 @@ void CoffeeBabaWeb::ws_onEvent(AsyncWebSocket * server, AsyncWebSocketClient * c
     else if(type == WS_EVT_DISCONNECT)
     {
         //client disconnected
-        Serial.printf("ws[%s][%u] disconnect: %u\n", server->url(), client->id());
+        Serial.printf("ws[%s][%u] disconnect\n", server->url(), client->id());
     }
     else if(type == WS_EVT_ERROR)
     {

@@ -1,9 +1,12 @@
-.DS_Store
-bin/*/
-*build-*
-*build*
+# pio ignores
+.pio
+.clang_complete
+.gcc-flags.json
+.ccls
+
+# vim
 *~
-build-tmp/
-debug.txt
 *.swp
+
+# tmp files
 tmp/
