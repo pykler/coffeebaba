@@ -1,0 +1,19 @@
+R"=====(<!DOCTYPE html>
+<html> 
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>CoffeeBaba</title>
+        <link href="//mincss.com/entireframework.min.css" rel="stylesheet" type="text/css">
+        <style>
+            h1 {
+                margin: 0.2em 0;
+                border-bottom: 5px solid;
+                margin-bottom: 15px;
+                padding-bottom: 5px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+)====="

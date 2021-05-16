@@ -9,28 +9,16 @@
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 
-#define CB_HTML_HEAD "<!DOCTYPE html> " \
-    "<html> " \
-    "    <head>\n" \
-    "        <meta charset=\"UTF-8\">\n" \
-    "        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n" \
-    "        <title>CoffeeBaba</title>\n" \
-    "        <link href=\"//mincss.com/entireframework.min.css\" rel=\"stylesheet\" type=\"text/css\">\n" \
-    "        <style>\n" \
-    "            h1 {\n" \
-    "                margin: 0.2em 0;\n" \
-    "                border-bottom: 5px solid;\n" \
-    "                margin-bottom: 15px;\n" \
-    "                padding-bottom: 5px;\n" \
-    "            }\n" \
-    "        </style>\n" \
-    "    </head>\n" \
-    "    <body>\n" \
-    "        <div class=\"container\">\n"
- 
-#define CB_HTML_FOOT "        </div>\n" \
-    "    </body>\n" \
-    "</html>\n"
+// first const, is for the char* (string data),
+// second is for the pointer (int)
+// this is why we can define it in the header and not have a linker error
+const char* const CB_HTML_HEAD = 
+#include "coffeebaba_web_head.htmli"
+;
+
+const char* const CB_HTML_FOOT =
+#include "coffeebaba_web_foot.htmli"
+;
 
 enum AdminAction { ADMIN_NONE, ADMIN_REBOOT, ADMIN_RESET };
 
