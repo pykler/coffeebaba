@@ -1,0 +1,7 @@
+debug websocket server / client
+
+server.py: A mock websocket server to confirm artisan roaster scope
+functionality and coffeebaba web ui
+
+client.py: Mock client to communicate directly with the coffeebaba
+microcontroller

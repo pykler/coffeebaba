@@ -50,3 +50,14 @@ To run static code analysis, either use the inspect tab in `pio home` or run:
 ```
 pio check --skip-packages
 ```
+
+## Testing
+
+To launch a mock websocket and http server to test the UI code, run:
+
+    python scripts/websocket/server.py
+
+Accessing the server at http://localhost:8080/index.html (by default) will display the UI.
+
+To test the microcontroller, you can use client.py which communicates with a
+websocket server and periodically turns the burner on and off.
