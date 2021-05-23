@@ -32,10 +32,8 @@ void CoffeeBabaWeb::error404(AsyncWebServerRequest *request)
     logr(request);
     AsyncResponseStream *response = request->beginResponseStream("text/html");
     response->setCode(404);
-    response->print(CB_HTML_HEAD);
     response->print("<h1> CoffeeBaba </h1>");
     response->print("<div class=\"msg\"><strong>404!</strong> This page is lost, if you find it let us know </div>");
-    response->print(CB_HTML_FOOT);
     request->send(response);
 }
 
@@ -44,25 +42,32 @@ void CoffeeBabaWeb::index_get(AsyncWebServerRequest *request)
     logr(request);
     AsyncResponseStream *response = request->beginResponseStream("text/html");
     response->setCode(200);
-    response->print(CB_HTML_HEAD);
-    response->print("<h1> CoffeeBaba </h1>");
-    // Admin actions
-    response->print("<h2> Admin Actions </h2>");
-    response->print("<div>");
-    response->print("<form method=\"POST\"><button class=\"btn btn-c btn-sm smooth\" type=\"submit\" name=\"action\" value=\"reset\">Factory Reset</button></form>");
-    response->print("<form method=\"POST\"><button class=\"btn btn-a btn-sm smooth\" type=\"submit\" name=\"action\" value=\"reboot\">Reboot</button></form>");
-    response->print("</div>");
-    // Stats Table
-    response->print("<h2> Stats </h2>");
-    response->printf("<table class=\"table\"><tbody><tr><th>Free Memory</th><td>%d</td></tr><tr><th>Used Sketch</th><td>%d</td></tr><tr><th>Free Sketch</th><td>%d</td></tr><tr><th>Uptime (mins)</th><td>%.2f</td></tr><tr><th>Last Reset Reason</th><td>%s</td></tr></tbody></table>", ESP.getFreeHeap(), ESP.getSketchSize(), ESP.getFreeSketchSpace(), millis() / 60000.0, ESP.getResetReason().c_str());
-    response->print("<h2> Chip Info </h2>");
-    response->printf("<table class=\"table\"><tbody><tr><th>CPU Mhz</th><td>%d</td></tr><tr><th>Chip ID</th><td>%06X</td></tr><tr><th>SDK</th><td>%s</td></tr><tr><th>Version</th><td>%s</td></tr></tbody></table>", ESP.getCpuFreqMHz(), ESP.getChipId(), system_get_sdk_version(), ESP.getCoreVersion().c_str());
-    // Admin area
-    response->print(CB_HTML_FOOT);
+    response->print(CB_HTML_INDEX);
     request->send(response);
 }
 
-void CoffeeBabaWeb::index_post(AsyncWebServerRequest *request)
+void CoffeeBabaWeb::admin_get(AsyncWebServerRequest *request)
+{
+    logr(request);
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
+    response->setCode(200);
+    StaticJsonDocument<256> doc;
+    doc.createNestedObject("stats");
+    doc.createNestedObject("chip");
+    doc["stats"]["heap"] = ESP.getFreeHeap();
+    doc["stats"]["sketch_size"] = ESP.getSketchSize();
+    doc["stats"]["sketch_free"] = ESP.getFreeSketchSpace();
+    doc["stats"]["uptime"] = millis() / 60000.0;
+    doc["stats"]["last_reboot"] = ESP.getResetReason();
+    doc["chip"]["cpu_mhz"] = ESP.getCpuFreqMHz();
+    doc["chip"]["id"] = ESP.getChipId();
+    doc["chip"]["sdk"] = system_get_sdk_version();
+    doc["chip"]["version"] = ESP.getCoreVersion();
+    serializeJson(doc, *response);
+    request->send(response);
+}
+
+void CoffeeBabaWeb::admin_post(AsyncWebServerRequest *request)
 {
     logr(request);
     // process the request
@@ -151,7 +156,8 @@ void CoffeeBabaWeb::setup()
     server->addHandler(ws);
 
     server->on("/", HTTP_GET, std::bind(&CoffeeBabaWeb::index_get, this, std::placeholders::_1));
-    server->on("/", HTTP_POST, std::bind(&CoffeeBabaWeb::index_post, this, std::placeholders::_1));
+    server->on("/admin", HTTP_GET, std::bind(&CoffeeBabaWeb::admin_get, this, std::placeholders::_1));
+    server->on("/admin", HTTP_POST, std::bind(&CoffeeBabaWeb::admin_post, this, std::placeholders::_1));
     server->onNotFound(std::bind(&CoffeeBabaWeb::error404, this, std::placeholders::_1));
     server->begin();
 }

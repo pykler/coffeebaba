@@ -1,0 +1,292 @@
+R"=====(<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CoffeeBaba</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.2/css/bulma.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/@creativebulma/bulma-tooltip@1.2.0/dist/bulma-tooltip.min.css" rel="stylesheet" type="text/css">
+    <style>
+      [v-cloak] {
+        display: none;
+      }
+      h1 {
+        margin: 0.2em 0;
+        border-bottom: 5px solid;
+        margin-bottom: 15px;
+        padding-bottom: 5px;
+      }
+      .tag {
+        margin-right:0.3em;
+      }
+      th {
+        width: 40%;
+      }
+      input[type="checkbox"] {
+        margin-right:0.3em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container" id="app" v-cloak>
+      <h1 class="title is-1">CoffeeBaba</h1>
+      <div class="tabs">
+        <ul>
+          <li v-for="tab in tabs" :class="{ 'is-active': selectedTab === tab }">
+            <a @click="selectTab(tab)">{{ tab }}</a>
+          </li>
+        </ul>
+      </div>
+      <div class="tabs-details">
+        <div v-if="selectedTab === 'Data'">
+          <div>
+            <div v-if="websocket" class="columns is-mobile">
+              <div class="column is-two-thirds">
+                <label class="checkbox tag is-medium is-danger has-tooltip-arrow has-tooltip-right" :data-tooltip="'Turn Burner ' + (roaster.burner ? 'OFF': 'ON')">
+                  <input v-model="roaster.burner" @change="changeBurner" type="checkbox">
+                  Burner
+                </label>
+                <button v-if="roaster.charge.e" class="tag is-medium button is-warning has-tooltip-arrow has-tooltip-right" @click="setCharge" data-tooltip="Cancel Charge">
+                  <span>{{ roaster.charge.m.pad(2) }}:{{roaster.charge.s.pad(2) }} <span class="delete"></span></span>
+                </button>
+                <button v-else class="tag is-medium button is-info has-tooltip-arrow has-tooltip-right" @click="setCharge" data-tooltip="Click once you dump the beans into the roaster">
+                  <span>Charge</span>
+                </button>
+              </div>
+              <div class="column is-one-third">
+                <span class="tag is-medium is-info is-success is-light has-tooltip-arrow has-tooltip-left" data-tooltip="Current Temp">{{ roaster.bt.toFixed(1) }} &deg; C</span>
+              </div>
+            </div>
+            <div v-else>
+              <span class="tag is-medium is-warning">Websocket disconnected</span>
+            </div>
+          </div>
+          <div ref="chart">
+          </div>
+        </div>
+        <div v-if="selectedTab === 'Admin'">
+          <div class="buttons are-small">
+            <form>
+              <button class="button is-success is-rounded" @click.stop.prevent="getAdminData">Refresh</button>
+            </form>
+            <form method="POST" action="/admin">
+              <button class="button is-info is-rounded" type="submit" name="action" value="reboot">Reboot</button>
+            </form>
+            <form method="POST" action="/admin">
+              <button class="button is-danger is-rounded" type="submit" name="action" value="reset">Factory Reset</button>
+            </form>
+          </div>
+          <h3 class="title is-3">Stats</h3>
+          <table class="table is-hoverable is-fullwidth" v-if="admin_data.stats">
+            <tbody>
+              <tr>
+                <th class="is-half">Free Memory</th>
+                <td>{{ admin_data.stats.heap }}</td>
+              </tr>
+              <tr>
+                <th>Used Sketch</th>
+                <td>{{ admin_data.stats.sketch_size }}</td>
+              </tr>
+              <tr>
+                <th>Free Sketch</th>
+                <td>{{ admin_data.stats.sketch_free }}</td>
+              </tr>
+              <tr>
+                <th>Uptime (mins)</th>
+                <td>{{ admin_data.stats.uptime.toFixed(2) }}</td>
+              </tr>
+              <tr>
+                <th>Last Reset Reason</th>
+                <td>{{ admin_data.stats.last_reboot }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <h3 class="title is-3">Chip Info</h3>
+          <table class="table is-hoverable is-fullwidth" v-if="admin_data.chip">
+            <tbody>
+              <tr>
+                <th>CPU Mhz</th>
+                <td>{{ admin_data.chip.cpu_mhz }}</td>
+              </tr>
+              <tr>
+                <th>Chip ID</th>
+                <!-- 6 digit hexadecimal -->
+                <td>{{ ('00000' + admin_data.chip.id.toString(16)).substr(-5) }}</td>
+              </tr>
+              <tr>
+                <th>SDK</th>
+                <td>{{ admin_data.chip.sdk }}</td>
+              </tr>
+              <tr>
+                <th>Version</th>
+                <td>{{ admin_data.chip.version }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/vue@next"></script>
+    <script>
+      Number.prototype.pad = function(size) {
+        var s = String(this);
+        while (s.length < (size || 2)) {s = "0" + s;}
+        return s;
+      };
+      const vue = {
+        data() {
+          return {
+            selectedTab: "Data",
+            tabs: ["Data", "Admin"],
+            roaster: { bt: 212.59, burner: true, charge: {e: 0, m: 0, s: 0} },
+            admin_data: {},
+            chart: null,
+            chart_config: {
+              type: 'scatter',
+              data: {
+                datasets: [{
+                  label: 'background',
+                  showLine: true,
+                  backgroundColor: 'rgb(206, 206, 206)',
+                  borderColor: 'rgb(229, 229, 229)',
+                  data: [
+                    {x:0, y:230},
+                    {x:3.5, y: 142.5},
+                    {x:5, y:150},
+                    {x:8, y:190},
+                    {x:10, y:210},
+                    {x:11.5, y:220},
+                  ],
+                  cubicInterpolationMode: 'monotone',
+                }],
+              },
+              options: {
+                responsive: true,
+                animation: false,
+                scales: {
+                  y: {
+                    // beginAtZero: true,
+                    // stepSize: 5000
+                  },
+                },
+              },
+            },
+            websocket: null,
+          }
+        },
+        methods:{
+          selectTab(tab) {
+            this.selectedTab = tab;
+            if (this.selectedTab === 'Data') {
+              this.$nextTick(function(){
+                this.drawChart();
+              });
+            }
+          },
+          drawChart() {
+            var chart = this.$refs.chart;
+            if (chart) {
+              chart.innerHTML = ('<canvas></canvas>');
+              this.chart = new Chart(chart.childNodes[0], this.chart_config);
+            }
+          },
+          setCharge() {
+            if (this.roaster.charge.e) {
+              // we are being asked to cancel this charge
+              this.roaster.charge.e = null;
+              // remove the live dataset
+              this.chart_config.data.datasets.splice(
+                this.chart_config.data.datasets.length - 1, 1
+              );
+            } else {
+              // initiate charge
+              this.roaster.charge.e = new Date();
+              this.updateChargeTimer();
+              this.chart_config.data.datasets.push({
+                label: 'live',
+                showLine: true,
+                backgroundColor: 'rgb(255, 56, 96)',
+                borderColor: 'rgb(250, 25, 70)',
+                data: [],
+                cubicInterpolationMode: 'monotone',
+              });
+            }
+          },
+          updateChargeTimer() {
+            const since = new Date() - this.roaster.charge.e;
+            this.roaster.charge.m = Math.floor(since / (1000 * 60));
+            this.roaster.charge.s = Math.floor(since / 1000) - (this.roaster.charge.m * 60);
+            setTimeout(() => {
+              this.updateChargeTimer();
+            }, 1000)
+          },
+          isTurningPoint(data, point) {
+            const l = data.length;
+            const a = data[l-2].y, b = data[l-1].y;
+            // is `b` a turning point?
+            return !((a <= b && b <= point.y) || (a >= b && b >= point.y));
+          },
+          updateChargeChart(data) {
+            if (this.roaster.charge.e) {
+                const data = this.chart_config.data.datasets[1].data;
+                const point = {
+                  x: (this.roaster.charge.m + this.roaster.charge.s / 60),
+                  y: this.roaster.bt,
+                };
+                if (data.length < 2 || this.isTurningPoint(data, point)) {
+                  data.push(point);
+                } else {
+                  // if its not a turning point, replace the last point
+                  data[data.length - 1] = point;
+                }
+                this.drawChart();
+                // this.chart.update();
+            }
+          },
+          connectWS() {
+            var $this = this;
+            const websocket_path = window.location.host + '/WebSocket';
+            this.websocket = new WebSocket("ws://" + websocket_path);
+            this.websocket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data.data.beanTemp) {
+                  $this.roaster.bt = data.data.beanTemp;
+                  $this.roaster.burner = data.data.burner? true: false;
+                  $this.updateChargeChart();
+                }
+            };
+            this.websocket.onopen = function(event) {
+              $this.getRoasterState();
+            }
+          },
+          getRoasterState() {
+              this.websocket.send(JSON.stringify({
+                  id: 0, command: 'getRoasterState',
+              }));
+              setTimeout(() => {
+                this.getRoasterState();
+              }, 1000)
+          },
+          changeBurner() {
+            this.websocket.send(JSON.stringify({
+              id: 0, command: 'setControlParams',
+              params: {burner: this.roaster.burner? 1: 0},
+            }));
+          },
+          async getAdminData() {
+            const res = await fetch('/admin');
+            this.admin_data = await res.json();
+          },
+        },
+        mounted() {
+          this.selectTab('Data');
+          this.getAdminData();
+          this.connectWS();
+        }
+      };
+      Vue.createApp(vue).mount('#app');
+    </script>
+  </body>
+</html>
+)====="
