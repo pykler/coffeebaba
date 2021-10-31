@@ -10,3 +10,6 @@
 
 # tmp files
 tmp/
+
+# vscode
+.vscode/
