@@ -1,0 +1,17 @@
+{
+  "name": "coffeebaba",
+  "version": "0.0.1",
+  "description": "support packages to aid with coffeebaba dev",
+  "dependencies": {},
+  "devDependencies": {
+    "eslint": "^8.2.0",
+    "eslint-plugin-html": "^6.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pykler/coffeebaba.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "homepage": "https://github.com/pykler/coffeebaba#readme"
+}

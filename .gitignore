@@ -13,3 +13,7 @@ tmp/
 
 # vscode
 .vscode/
+
+# eslint
+node_modules/
+package-lock.json
